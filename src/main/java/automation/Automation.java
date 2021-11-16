@@ -10,13 +10,19 @@ import java.io.OutputStream;
 import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
 
+import java.time.Duration;
+
 import org.openqa.selenium.By;
+import org.openqa.selenium.Alert;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.safari.SafariDriver;
 import org.openqa.selenium.edge.EdgeDriver;
+
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 
 public class Automation {
 
@@ -29,7 +35,7 @@ public class Automation {
     public static void main(String[] args) {
         String configFilename = "/Users/naimul7/JavaProjects/SeleniumTesting/src/main/java/automation/config.properties";
 
-        /* Initial Condition of WebDriver and Properties pointer */
+        /* Initial Condition of WebDriver and Properties instance */
         prop = new Properties();
         driver = null;
 
@@ -42,52 +48,50 @@ public class Automation {
             writePropertiesFile(configFilename);
 
         /* Read Config file for Website Automation */
-        readPropertiesFile(configFilename);
+        configureAutomation(configFilename);
 
-        /* Search specific website in a specific browser for a specific item */
-        search("Pokemon Brilliant Diamond",true);
-
-        System.out.println("Thank you for running this program!");
+        /* Thank You Message */
+        System.out.println("\nThank you for running this program!");
     }
 
-    public static void readPropertiesFile(String filename) {
-
+    /* Website Automation */
+    public static void configureAutomation(String filename) {
+        /* Initialize the Properties instance 'prop' for reading from config.properties file */
         try {
             InputStream input =  new FileInputStream(filename);
             prop.load(input);
+
+            /* Set the data fields for the browser and the number of websites to automates */
+            browser = prop.getProperty("browser").toLowerCase();
+            total = Integer.parseInt(prop.getProperty("websites"));
+
+            /* Select the corresponding WebDriver for the Test Automation */
+            driver = selectDriver();
+            if(driver == null)
+                System.out.println("Sorry! " + browser + " is not one of the supported browsers for this website automation program!\n");
+
+            /* Search specific website in a specific browser for a specific item */
+            search("Pokemon Brilliant Diamond",true);
+            input.close();
         } catch(FileNotFoundException fnfex) { fnfex.printStackTrace();
-        } catch(IOException ioex) { ioex.printStackTrace(); }
+        } catch(IOException ioex) { ioex.printStackTrace();
+        } finally { driver.close(); }
+    }
 
-        browser = prop.getProperty("browser").toLowerCase();
-        total = Integer.parseInt(prop.getProperty("websites"));
-
+    /* Returns to create the desired WebDriver according to the Browser of Choice */
+    public static WebDriver selectDriver() {
         System.setProperty("webdriver." + browser + ".driver", "/Users/naimul7/Downloads/" + browser + "driver");
-
         switch(browser) {
-            case "ie":
-                driver = new InternetExplorerDriver();
-                break ;
-
-            case "edge":
-                driver = new EdgeDriver();
-                break;
-
-            case "chrome":
-                driver = new ChromeDriver();
-                break;
-
-            case "gecko":
-                driver = new FirefoxDriver();
-                break;
-
-            case "safari":
-                driver = new SafariDriver();
-                break;
-
-            default: System.out.println("Sorry! " + browser + " is not one of the supported browsers for this website automation program!\n");
+            case "ie": return new InternetExplorerDriver();
+            case "edge": return new EdgeDriver();
+            case "chrome": return new ChromeDriver();
+            case "gecko": return new FirefoxDriver();
+            case "safari": return new SafariDriver();
+            default: return null;
         }
     }
 
+    /* Searches All Supported Websites for the specified Keyword through Automation */
     public static void search(String key, boolean all) {
 
         int i = 1;
@@ -104,10 +108,21 @@ public class Automation {
         } while(all);
     }
 
+    /* Search Functionality for Various Websites: Current Support for: eBay, GameStop, BestBuy, Amazon, Target */
     public static void search(String web, String key, int webIndex) {
-        /* Handle Sign-Up Popup for BestBuy website */
-        if(web.equals("bestbuy"))
-            driver.findElement(By.xpath("//*[@id=\"widgets-view-email-modal-mount\"]/div/div/div[1]/div/div/div/div/button/svg"));
+        /* Unexpected Modal Handling UNSUCCESSFUL: Handle Sign-Up Modal for BestBuy during automated test run */
+        if(web.equals("bestbuy")) {
+            /*
+                For ease of debugging the issue,
+                I have configured my data to run the website automation
+                for BestBuy as the last website in the script
+            */
+            /* I have tried WebDriverWait with ExpectedConditions as well as Clicking on a Static Area in the Webpage outside of the Modal */
+            /*
+                Requesting for an Effective Solution that is Applicable to all Websites:
+                A modal appears in the screen prompting to sign in or sign up
+            */
+        }
 
         /* Enter keyword into the search field */
         if(web.equals("gamestop"))      /* Game Stop Search Field is located using Xpath */
@@ -121,23 +136,21 @@ public class Automation {
             driver.findElement(By.id(prop.getProperty(web + "searchbutton"))).click();
     }
 
+    /*
+        Plan for future references:
+        ease of scaling
+        automation capability
+        of various websites
+        under a single framework
+    */
     public static void writePropertiesFile(String filename) {
         try {
             OutputStream output = new FileOutputStream(filename);
-
-            prop.setProperty("BestBuySearchField", "gh-search-input");
-            prop.setProperty("BestBuySearchButton", "//*[@id=\"shop-header-954da8b6-0ec4-43d4-bc0d-db220aa01223\"]/div/div[1]/header/div[1]/div/div[1]/div/form/button[2]/span/svg");
-            prop.setProperty("EbaySearchButton", "gh-btn");
-            prop.setProperty("EbaySearchField", "gh-ac");
-            prop.setProperty("AmazonSearchField", "twotabsearchtextbox");
-            prop.setProperty("AmazonSearchButton", "nav-search-submit-button");
-
-            prop.store(output, null);
-
+            /* write into the config.properties file using the following format for any number of properties */
+            /* prop.setProperty("key", "value"); */
             output.close();
         } catch(FileNotFoundException fnfex) { fnfex.printStackTrace();
-        } catch(IOException ioex) { ioex.printStackTrace(); }
-
-        System.out.println("Thank you for writing to the config file. ");
+        } catch(IOException ioex) { ioex.printStackTrace();
+        } finally { System.out.println("Writing properties into config.properties file was successful. "); }
     }
 }
